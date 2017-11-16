@@ -21,6 +21,4 @@ class Worker {
     vector<int> _skills;
 };
 
-vector<Worker> loadWorkers(string fileName);
-
 #endif

@@ -1,8 +1,7 @@
 #include<iostream>
 #include<algorithm>
 #include<string>
-#include<sstream>
-#include<fstream>
+#include<iomanip>
 
 #include "worker.h"
 
@@ -29,34 +28,7 @@ void Worker::printDetails(){
   cout << "Name: " << _name << endl;
   cout << "Skills: ";
   for(int i=0; i<_skills.size(); i++){
-    cout << _skills[i] << ", ";
+    cout << setw(2) << _skills[i] << " ";
   }
   cout << endl << endl;
-}
-
-
-vector<Worker> loadWorkers(string fileName){
-  ifstream inFile;
-  vector<Worker> workers;
-
-  inFile.open(fileName);
-
-  if(!inFile.good()){
-    cout << "Nie mozna otworzyc pliku";
-  }
-  else {
-    string line;
-    while(getline(inFile, line)){
-      string name;
-      string skill;
-      stringstream ss(line);
-      ss >> name;
-      Worker w(name);
-      while (ss >> skill) {
-        w.addSkill( stoi(skill) );
-      }
-      workers.push_back(w);
-    }
-  }
-  return workers;
 }
