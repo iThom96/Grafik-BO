@@ -7,16 +7,28 @@
 
 using namespace std;
 
-Worker::Worker():_name("No Name"){
-  // cout << "Worker created with no skills" << endl << endl;
-}
+Worker::Worker():_name("No Name"),_id(-1){}
+Worker::Worker(int id):_id(id){}
+Worker::Worker(string name):_name(name){}
+Worker::Worker(int id, string name):_id(id),_name(name){}
 
-Worker::Worker(string name):_name(name) {
-  // cout << "Worker created with name " << name << endl << endl;
+bool Worker::isEmpty(){
+  return _id == -1;
 }
 
 vector<int> Worker::getSkills(){
   return _skills;
+}
+
+int Worker::getID(){
+  return _id;
+}
+
+bool Worker::hasSkill(int skillID){
+  for(int i=0; i < _skills.size(); i++){
+    if( _skills[i] == skillID ) return true;
+  }
+  return false;
 }
 
 void Worker::addSkill(int skillID){
@@ -25,9 +37,10 @@ void Worker::addSkill(int skillID){
 }
 
 void Worker::printDetails(){
-  cout << "Name: " << _name << endl;
-  cout << "Skills: ";
-  for(int i=0; i<_skills.size(); i++){
+  cout << "ID: " << _id << endl;
+  cout << "Imie: " << _name << endl;
+  cout << "Umiejetnosci: ";
+  for(int i=0; i < _skills.size(); i++){
     cout << setw(2) << _skills[i] << " ";
   }
   cout << endl << endl;

@@ -15,5 +15,8 @@ int main() {
   G.loadTemplate("template.txt");
   G.printTemplate();
 
+  G.createFirstSolution();
+  G.printSolution();
+
   return 0;
 }
