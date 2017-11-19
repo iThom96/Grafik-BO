@@ -14,6 +14,11 @@ class Grafik {
     void printTemplate();
     void printSolution();
 
+    void createNewSolution();
+
+    int calculateObjectiveFunction(vector< vector<Worker> > solution );
+    int getObjectiveFunction();
+
   private:
     vector<Worker> _workers;
     vector< vector<int> > _template;
