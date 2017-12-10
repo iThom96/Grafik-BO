@@ -144,16 +144,18 @@ void Grafik::printSolution(){
 
 void Grafik::createNewSolution(){
 
-  for(int i=0; i< _taboo_list.size(); i++){ // Decrement tabo list
+  // Decrement tabo list
+  for(int i=0; i< _taboo_list.size(); i++){
     for(int j=0; j<_taboo_list[i].size(); j++){
       if(_taboo_list[i][j]>0) _taboo_list[i][j]--;
     }
   }
 
+  // Copy existing solution
   vector< vector<Worker> > newSolution(_solution);
 
+  // Free workers avaiable on this shift
   for(int i=0; i < newSolution.size(); i++){
-
     vector<Worker> freeWorkers(_workers);
     for(int j=0; j<newSolution[i].size(); j++){
       for(int k=0; k < freeWorkers.size(); k++){
@@ -161,12 +163,12 @@ void Grafik::createNewSolution(){
           freeWorkers.erase(freeWorkers.begin()+k);
         }
       }
-    } // freeWorkers ready
-
+    }
     random_shuffle ( freeWorkers.begin(), freeWorkers.end() );
+    //freeWorkers ready
 
     for(int j=0; j<newSolution[i].size(); j++){
-      if( _taboo_list[i][j]==0 && (rand() % 100 + 1) < P_SWAP ){
+      if( _taboo_list[i][j]==0 && (rand() % 100 + 1) < P_SWAP ){ //Randomly swap workers with free workers
 
         int reqSkill = _template[i][j];
         for(int k=0; k < freeWorkers.size(); k++){ // Sprawdź wolnych pracowników
@@ -174,7 +176,7 @@ void Grafik::createNewSolution(){
             freeWorkers.push_back( newSolution[i][j] );
             newSolution[i][j] = freeWorkers[k];
 
-            _taboo_list[i][j] = TABOO_AGE;
+            _taboo_list[i][j] = TABOO_AGE; // Add that place to tabo list for TABOO_AGE iterations
 
             freeWorkers.erase(freeWorkers.begin() + k);
             break;
@@ -186,7 +188,7 @@ void Grafik::createNewSolution(){
 
   }
   long newObjectiveFunction = calculateObjectiveFunction(newSolution);
-  if( newObjectiveFunction <= calculateObjectiveFunction(_solution) ) {
+  if( newObjectiveFunction <= calculateObjectiveFunction(_solution) ) { // If generated solution is better
 
     ofstream results("f_celu.csv", ios_base::app);
     if(!results.good()){
@@ -212,6 +214,7 @@ long Grafik::calculateObjectiveFunction( vector< vector<Worker> > solution ){
 
   long objectiveFunction;
 
+  // Wyrównanie liczby zmian dla każdego
   map<int, int> shiftCount;
 
   for(int i=0; i<_workers.size(); i++){
@@ -234,6 +237,7 @@ long Grafik::calculateObjectiveFunction( vector< vector<Worker> > solution ){
 
   shiftDiff = maxShifts - minShifts;
 
+  // Minimalizacja liczby zmian zmian oraz zabronienie pracy zmiana po zmianie
   for(int i=0; i<solution.size(); i++){
     for(int j=0; j < solution[i].size(); j++){
       int workerID = solution[i][j].getID();
@@ -269,7 +273,7 @@ long Grafik::calculateObjectiveFunction( vector< vector<Worker> > solution ){
     }
   }
 
-  objectiveFunction = 0.5 * shiftDiff + 0.5 * shiftChanges + 2*punishment;
+  objectiveFunction = 0.5 * shiftDiff + 0.5 * shiftChanges + 2 * punishment;
   return objectiveFunction;
 
 }
