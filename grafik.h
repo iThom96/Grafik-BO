@@ -16,12 +16,13 @@ class Grafik {
 
     void createNewSolution();
 
-    int calculateObjectiveFunction(vector< vector<Worker> > solution );
+    long calculateObjectiveFunction(vector< vector<Worker> > solution );
     int getObjectiveFunction();
 
   private:
     vector<Worker> _workers;
     vector< vector<int> > _template;
+    vector< vector<int> > _taboo_list;
     vector< vector<Worker> > _solution;
 };
 

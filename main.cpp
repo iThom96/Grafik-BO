@@ -7,6 +7,14 @@ using namespace std;
 
 int main() {
 
+  // TO DO:
+  // [x] Dopisać zabronienia
+  // [x] Poprawić f. celu na końcową
+  // [ ] Kryterium aspiracji (?)
+  // [ ] Interpretacja zabronien
+
+  system("clear");
+
   Grafik G;
 
   G.loadWorkers("workers.txt");
@@ -21,12 +29,6 @@ int main() {
   G.printSolution();
   cout << "Funkcja celu: " << G.getObjectiveFunction() << endl;
 
-  cout << endl << endl << "NOWE ROZWIAZANIE" << endl;
-
-  G.createNewSolution();
-  G.printSolution();
-  cout << "Funkcja celu: " << G.getObjectiveFunction() << endl;
-
   for(int i=0; i < 1000; i++){
     G.createNewSolution();
     // system("clear");
@@ -34,9 +36,10 @@ int main() {
     // cout << "Funkcja celu: " << G.getObjectiveFunction() << endl;
   }
 
+  cout << endl << endl << "ROZWIAZANIE KONCOWE" << endl;
+
   G.printSolution();
   cout << "Funkcja celu: " << G.getObjectiveFunction() << endl;
-
 
   return 0;
 }
