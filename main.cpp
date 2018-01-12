@@ -11,7 +11,7 @@ int main() {
   // TO DO:
   // [x] Dopisać zabronienia
   // [x] Poprawić f. celu na końcową
-  // [ ] Kryterium aspiracji (?)
+  // [x] Kryterium aspiracji (?)
   // [ ] Interpretacja zabronien
 
   INIReader reader("config.ini");

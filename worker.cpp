@@ -1,8 +1,3 @@
-#include<iostream>
-#include<algorithm>
-#include<string>
-#include<iomanip>
-
 #include "worker.h"
 
 using namespace std;

@@ -1,15 +1,3 @@
-#include<iostream>
-#include<string>
-#include<sstream>
-#include<fstream>
-#include<iomanip>
-#include <map>
-#include <cstdlib>
-#include <cmath>
-
-#include "inih-master/cpp/INIReader.h"
-
-#include "worker.h"
 #include "grafik.h"
 
 Grafik::Grafik(){
@@ -37,19 +25,19 @@ Grafik::Grafik(INIReader settings){
 
   EXPORT_TO_CSV = settings.GetBoolean("debug", "EXPORT_TO_CSV", false);
 
-  // if(EXPORT_TO_CSV){
-  //   _results.open("f_celu.csv", ios_base::app);
-  //   if(!_results.good()){
-  //     cout << "Nie mozna otworzyc pliku";
-  //   }
-  //   else {
-  //     _results << "value,shiftDiff,shiftChanges,punishment" << endl;
-  //   }
-  // }
+  if(EXPORT_TO_CSV){
+    _results.open("f_celu.csv");
+    if(!_results.good()){
+      cout << "Nie mozna otworzyc pliku";
+    }
+    else {
+      _results << "value;shiftDiff;shiftChanges;punishment;adj_shiftDiff;adj_shiftChanges;adj_punishment" << endl;
+    }
+  }
 }
 
 Grafik::~Grafik(){
-  // if(_results.is_open()) _results.close();
+  if(_results.is_open()) _results.close();
 }
 
 void Grafik::loadWorkers(string fileName){
@@ -254,7 +242,7 @@ map<string, float> Grafik::calculateObjectiveFunction( vector< vector<Worker> > 
   float shiftChanges = 0;
   float punishment = 0;
 
-  long objectiveFunction;
+  float objectiveFunction;
 
   // Wyrównanie liczby zmian dla każdego
 
@@ -332,18 +320,21 @@ map<string, float> Grafik::calculateObjectiveFunction( vector< vector<Worker> > 
 
   objectiveFunction = (SHIFT_DIFF_K * shiftDiff) + (SHIFT_CHANGES_K * shiftChanges) + (PUNISHMENT_K * punishment);
 
-  // cout << objectiveFunction << endl;
-
   objectiveFunctionParameters["value"] = objectiveFunction;
+
   objectiveFunctionParameters["shiftDiff"] = shiftDiff;
   objectiveFunctionParameters["shiftChanges"] = shiftChanges;
   objectiveFunctionParameters["punishment"] = punishment;
+
+  objectiveFunctionParameters["adj_shiftDiff"] = SHIFT_DIFF_K * shiftDiff;
+  objectiveFunctionParameters["adj_shiftChanges"] = SHIFT_CHANGES_K * shiftChanges;
+  objectiveFunctionParameters["adj_punishment"] = PUNISHMENT_K * punishment;
 
   return objectiveFunctionParameters;
 
 }
 
-long Grafik::getObjectiveFunction( vector< vector<Worker> > solution ){
+float Grafik::getObjectiveFunction( vector< vector<Worker> > solution ){
   return calculateObjectiveFunction(solution)["value"];
 }
 
@@ -388,13 +379,22 @@ vector< vector<Worker> > Grafik::getBestSolution(){
 }
 
 void Grafik::saveData( vector< vector<Worker> > solution ){
-  //
-  // map<string, float> objectiveFunction = calculateObjectiveFunction(solution);
-  //
-  // if(!_results.good()){
-  //   cout << "Nie mozna otworzyc pliku";
-  // }
-  // else {
-  //   _results << objectiveFunction["value"] << "," << objectiveFunction["shiftChanges"] << "," << objectiveFunction["shiftDiff"] << "," << objectiveFunction["punishment"] << endl;
-  // }
+
+  map<string, float> objectiveFunction = calculateObjectiveFunction(solution);
+
+  if(!_results.good()){
+    cout << "Nie mozna otworzyc pliku";
+  }
+  else {
+    _results.imbue(std::locale(std::cout.getloc(), new punct_facet<char, ','>));
+    _results <<
+      objectiveFunction["value"] << ";" <<
+      objectiveFunction["shiftChanges"] << ";" <<
+      objectiveFunction["shiftDiff"] << ";" <<
+      objectiveFunction["punishment"] << ";" <<
+      objectiveFunction["adj_shiftChanges"] << ";" <<
+      objectiveFunction["adj_shiftDiff"] << ";" <<
+      objectiveFunction["adj_punishment"] <<
+      endl;
+  }
 }
