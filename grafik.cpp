@@ -5,15 +5,51 @@
 #include<iomanip>
 #include <map>
 #include <cstdlib>
+#include <cmath>
+
+#include "inih-master/cpp/INIReader.h"
 
 #include "worker.h"
 #include "grafik.h"
 
-#define P_SWAP 20
-#define TABOO_AGE 10
-
 Grafik::Grafik(){
-  srand (time(NULL));
+  srand (1);
+  P_SWAP = 20;
+  TABOO_AGE = 10;
+  POGORSZENIE = 2;
+
+  SHIFT_DIFF_K = 0.2;
+  SHIFT_CHANGES_K = 0.1;
+  PUNISHMENT_K = 0.7;
+
+  EXPORT_TO_CSV = false;
+}
+
+Grafik::Grafik(INIReader settings){
+  srand (1);
+  P_SWAP = settings.GetReal("algorytm", "P_SWAP", 20);
+  TABOO_AGE = settings.GetReal("algorytm", "TABOO_AGE", 10);
+  POGORSZENIE = settings.GetReal("algorytm", "POGORSZENIE", 2);
+
+  SHIFT_DIFF_K = settings.GetReal("f_celu", "SHIFT_DIFF_K", 5);
+  SHIFT_CHANGES_K = settings.GetReal("f_celu", "SHIFT_CHANGES_K", 1);
+  PUNISHMENT_K = settings.GetReal("f_celu", "PUNISHMENT_K", 10);
+
+  EXPORT_TO_CSV = settings.GetBoolean("debug", "EXPORT_TO_CSV", false);
+
+  // if(EXPORT_TO_CSV){
+  //   _results.open("f_celu.csv", ios_base::app);
+  //   if(!_results.good()){
+  //     cout << "Nie mozna otworzyc pliku";
+  //   }
+  //   else {
+  //     _results << "value,shiftDiff,shiftChanges,punishment" << endl;
+  //   }
+  // }
+}
+
+Grafik::~Grafik(){
+  // if(_results.is_open()) _results.close();
 }
 
 void Grafik::loadWorkers(string fileName){
@@ -59,9 +95,11 @@ void Grafik::loadTemplate(string fileName){
 }
 
 void Grafik::createFirstSolution(){
-  for(int i=0; i < _template.size(); i++){ // Dla każdego dnia
+
+  for(int i=0; i < _template.size(); i++){ // Dla każdej zmiany
 
     _solution.push_back( vector<Worker>( _template[i].size() ) );
+    _best_solution.push_back( vector<Worker>( _template[i].size() ) );
     _taboo_list.push_back( vector<int>( _template[i].size() ) );
 
     vector<Worker> freeWorkers( _workers );
@@ -79,18 +117,15 @@ void Grafik::createFirstSolution(){
         }
       }
       _solution[i][j] = tmp;
+      _best_solution[i][j] = tmp;
 
     }
   }
-  ofstream results("f_celu.csv");
-  if(!results.good()){
-    cout << "Nie mozna otworzyc pliku";
-  }
-  else {
-    results << calculateObjectiveFunction(_solution) << ",";
-  }
-  results.close();
 
+
+  if(EXPORT_TO_CSV){
+    saveData(_solution);
+  }
 }
 
 void Grafik::printWorkers(){
@@ -115,11 +150,11 @@ void Grafik::printTemplate(){
   }
 }
 
-void Grafik::printSolution(){
+void Grafik::printSolution( vector< vector<Worker> > solution ){
   cout << endl << "Rozwiazanie: " << endl;
   cout << "Zmiana | ID Pracownika" << endl;
 
-  for(int i=0; i < _solution.size(); i++){
+  for(int i=0; i < solution.size(); i++){
 
     if(i%3 == 0){
       cout << "-----------------" << endl;
@@ -128,12 +163,12 @@ void Grafik::printSolution(){
     cout << setw(6) << i;
     cout << " | ";
 
-    for(int j=0; j < _solution[i].size(); j++){
-      if( _solution[i][j].isEmpty() ){
+    for(int j=0; j < solution[i].size(); j++){
+      if( solution[i][j].isEmpty() ){
         cout << setw(2) << "#" << " ";
       }
       else {
-        cout << setw(2) << _solution[i][j].getID() << " ";
+        cout << setw(2) << solution[i][j].getID() << " ";
       }
     }
 
@@ -143,6 +178,8 @@ void Grafik::printSolution(){
 }
 
 void Grafik::createNewSolution(){
+
+  bool taboo_violation = false;
 
   // Decrement tabo list
   for(int i=0; i< _taboo_list.size(); i++){
@@ -168,7 +205,11 @@ void Grafik::createNewSolution(){
     //freeWorkers ready
 
     for(int j=0; j<newSolution[i].size(); j++){
-      if( _taboo_list[i][j]==0 && (rand() % 100 + 1) < P_SWAP ){ //Randomly swap workers with free workers
+      if( (rand() % 100 + 1) < P_SWAP ){ //Randomly swap workers with free workers
+
+        if(_taboo_list[i][j] != 0){
+          taboo_violation = true;
+        }
 
         int reqSkill = _template[i][j];
         for(int k=0; k < freeWorkers.size(); k++){ // Sprawdź wolnych pracowników
@@ -187,55 +228,71 @@ void Grafik::createNewSolution(){
     }
 
   }
-  long newObjectiveFunction = calculateObjectiveFunction(newSolution);
-  if( newObjectiveFunction <= calculateObjectiveFunction(_solution) ) { // If generated solution is better
+  long newObjectiveFunction = getObjectiveFunction(newSolution);
 
-    ofstream results("f_celu.csv", ios_base::app);
-    if(!results.good()){
-      cout << "Nie mozna otworzyc pliku";
+  if( newObjectiveFunction <= getObjectiveFunction(_best_solution) || ( !taboo_violation && newObjectiveFunction <= getObjectiveFunction(_best_solution)+POGORSZENIE) ) { // If generated solution is better
+
+    if(EXPORT_TO_CSV){
+      saveData( newSolution );
     }
-    else {
-      results << newObjectiveFunction << ",";
-    }
-    results.close();
 
     _solution = newSolution;
   }
 
+  if( newObjectiveFunction <= getObjectiveFunction(_best_solution) ) {
+    _best_solution = newSolution;
+  }
+
 }
 
-long Grafik::calculateObjectiveFunction( vector< vector<Worker> > solution ){
-  int minShifts = 1000;
-  int maxShifts = -1;
-  int shiftDiff;
+map<string, float> Grafik::calculateObjectiveFunction( vector< vector<Worker> > solution ){
 
-  long shiftChanges = 0;
-  long punishment = 0;
+  map<string, float> objectiveFunctionParameters;
+
+  float shiftDiff = 0;
+
+  float shiftChanges = 0;
+  float punishment = 0;
 
   long objectiveFunction;
 
   // Wyrównanie liczby zmian dla każdego
-  map<int, int> shiftCount;
 
   for(int i=0; i<_workers.size(); i++){
-    shiftCount[ _workers[i].getID() ] = 0;
+    _shiftCount[ _workers[i].getID() ].resize(3);
+    _shiftCount[ _workers[i].getID() ][0] = 0;
+    _shiftCount[ _workers[i].getID() ][1] = 0;
+    _shiftCount[ _workers[i].getID() ][2] = 0;
   }
 
+  int shift = 0;
   for(int i=0; i < solution.size(); i++){
     for(int j=0; j < solution[i].size(); j++){
       int workerID = solution[i][j].getID();
-      if(shiftCount.find(workerID) != shiftCount.end()){ // Znaleziono
-        shiftCount[workerID]++;
+      if(_shiftCount.find(workerID) != _shiftCount.end()){ // Znaleziono
+        _shiftCount[workerID][shift]++;
       }
+    }
+    shift++;
+    if(shift==3) shift=0;
+  }
+
+  int shiftSum = 0;
+  for (map<int,vector<int> >::iterator it=_shiftCount.begin(); it!=_shiftCount.end(); it++){
+    for(int i=0; i<(it->second).size(); i++){
+      shiftSum += (it->second)[i];
     }
   }
 
-  for (map<int,int>::iterator it=shiftCount.begin(); it!=shiftCount.end(); it++){
-    if( it->second < minShifts ) minShifts = it->second;
-    if( it->second > maxShifts ) maxShifts = it->second;
-  }
+  float avgShifts = shiftSum / (3*_workers.size());
 
-  shiftDiff = maxShifts - minShifts;
+  for (map<int,vector<int> >::iterator it=_shiftCount.begin(); it!=_shiftCount.end(); it++){
+    for(int i=0; i<(it->second).size(); i++){
+      float diff = avgShifts - (it->second)[i];
+
+      shiftDiff += fabs( diff );
+    }
+  }
 
   // Minimalizacja liczby zmian zmian oraz zabronienie pracy zmiana po zmianie
   for(int i=0; i<solution.size(); i++){
@@ -257,14 +314,14 @@ long Grafik::calculateObjectiveFunction( vector< vector<Worker> > solution ){
       }
 
       if(i+4 <solution.size()) for(int k=0; k<solution[i+4].size(); k++){
-        if(solution[i+4][k].getID() == workerID){ //Pracownik pracuje cztery zmiany później - dopuszczalne
+        if(solution[i+4][k].getID() == workerID){ //Pracownik pracuje cztery zmiany później - dopuszczalne, ale pogorsza f.celu
           shiftChanges += 1;
           break;
         }
       }
 
       if(i+5 <solution.size()) for(int k=0; k<solution[i+5].size(); k++){
-        if(solution[i+5][k].getID() == workerID){ //Pracownik pracuje pięć zmian później - dopuszczalne
+        if(solution[i+5][k].getID() == workerID){ //Pracownik pracuje pięć zmian później - dopuszczalne, ale pogorsza f.celu
           shiftChanges += 1;
           break;
         }
@@ -273,11 +330,71 @@ long Grafik::calculateObjectiveFunction( vector< vector<Worker> > solution ){
     }
   }
 
-  objectiveFunction = 0.5 * shiftDiff + 0.5 * shiftChanges + 2 * punishment;
-  return objectiveFunction;
+  objectiveFunction = (SHIFT_DIFF_K * shiftDiff) + (SHIFT_CHANGES_K * shiftChanges) + (PUNISHMENT_K * punishment);
+
+  // cout << objectiveFunction << endl;
+
+  objectiveFunctionParameters["value"] = objectiveFunction;
+  objectiveFunctionParameters["shiftDiff"] = shiftDiff;
+  objectiveFunctionParameters["shiftChanges"] = shiftChanges;
+  objectiveFunctionParameters["punishment"] = punishment;
+
+  return objectiveFunctionParameters;
 
 }
 
-int Grafik::getObjectiveFunction(){
-  return calculateObjectiveFunction(_solution);
+long Grafik::getObjectiveFunction( vector< vector<Worker> > solution ){
+  return calculateObjectiveFunction(solution)["value"];
+}
+
+void Grafik::printShiftCount( vector< vector<Worker> > solution ){
+
+  map<int, vector<int> > shiftCount;
+
+  for(int i=0; i<_workers.size(); i++){
+    shiftCount[ _workers[i].getID() ].resize(3);
+    shiftCount[ _workers[i].getID() ][0] = 0;
+    shiftCount[ _workers[i].getID() ][1] = 0;
+    shiftCount[ _workers[i].getID() ][2] = 0;
+  }
+
+  int shift = 0;
+  for(int i=0; i < solution.size(); i++){
+    for(int j=0; j < solution[i].size(); j++){
+      int workerID = solution[i][j].getID();
+      if(shiftCount.find(workerID) != shiftCount.end()){ // Znaleziono
+        shiftCount[workerID][shift]++;
+      }
+    }
+    shift++;
+    if(shift==3) shift=0;
+  }
+
+  for (map<int,vector<int> >::iterator it=shiftCount.begin(); it!=shiftCount.end(); it++){
+    cout << it->first << ": ";
+    for(int i=0; i<(it->second).size(); i++){
+      cout << (it->second)[i] << " ";
+    }
+    cout << endl;
+  }
+}
+
+vector< vector<Worker> > Grafik::getCurrentSolution(){
+  return _solution;
+}
+
+vector< vector<Worker> > Grafik::getBestSolution(){
+  return _best_solution;
+}
+
+void Grafik::saveData( vector< vector<Worker> > solution ){
+  //
+  // map<string, float> objectiveFunction = calculateObjectiveFunction(solution);
+  //
+  // if(!_results.good()){
+  //   cout << "Nie mozna otworzyc pliku";
+  // }
+  // else {
+  //   _results << objectiveFunction["value"] << "," << objectiveFunction["shiftChanges"] << "," << objectiveFunction["shiftDiff"] << "," << objectiveFunction["punishment"] << endl;
+  // }
 }

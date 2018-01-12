@@ -1,4 +1,5 @@
 #include<iostream>
+#include "inih-master/cpp/INIReader.h"
 
 #include "worker.h"
 #include "grafik.h"
@@ -13,9 +14,24 @@ int main() {
   // [ ] Kryterium aspiracji (?)
   // [ ] Interpretacja zabronien
 
+  INIReader reader("config.ini");
+  if (reader.ParseError() < 0) {
+    cout << "Can't load 'config.ini'" << endl;
+    return 1;
+  }
+
+
+  const int NUM_ITERATIONS = reader.GetInteger("algorytm", "iteracje", 10);
+
+
   system("clear");
 
-  Grafik G;
+  cout << "A" << endl;
+
+  Grafik G(reader);
+
+  cout << "B" << endl;
+
 
   G.loadWorkers("workers.txt");
   G.printWorkers();
@@ -26,10 +42,13 @@ int main() {
   cout << endl << endl << "ROZWIAZANIE POCZATKOWE" << endl;
 
   G.createFirstSolution();
-  G.printSolution();
-  cout << "Funkcja celu: " << G.getObjectiveFunction() << endl;
+  G.printSolution( G.getBestSolution() );
+  cout << "Funkcja celu: " << G.getObjectiveFunction( G.getBestSolution() ) << endl;
 
-  for(int i=0; i < 1000; i++){
+  cout << "Liczba zmian:" << endl;
+  G.printShiftCount( G.getBestSolution() );
+
+  for(int i=0; i < NUM_ITERATIONS; i++){
     G.createNewSolution();
     // system("clear");
     // G.printSolution();
@@ -38,8 +57,11 @@ int main() {
 
   cout << endl << endl << "ROZWIAZANIE KONCOWE" << endl;
 
-  G.printSolution();
-  cout << "Funkcja celu: " << G.getObjectiveFunction() << endl;
+  G.printSolution( G.getBestSolution() );
+  cout << "Funkcja celu: " << G.getObjectiveFunction( G.getBestSolution() ) << endl;
+
+  cout << "Liczba zmian:" << endl;
+  G.printShiftCount( G.getBestSolution() );
 
   return 0;
 }

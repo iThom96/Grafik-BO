@@ -33,3 +33,4 @@
 
 grafik
 *.csv
+.DS_Store
