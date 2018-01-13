@@ -23,45 +23,38 @@ int main() {
 
   const int NUM_ITERATIONS = reader.GetInteger("algorytm", "iteracje", 10);
 
-
   system("clear");
-
-  cout << "A" << endl;
 
   Grafik G(reader);
 
-  cout << "B" << endl;
-
-
   G.loadWorkers("workers.txt");
-  G.printWorkers();
+  //G.printWorkers();
 
   G.loadTemplate("template.txt");
-  G.printTemplate();
+  //G.printTemplate();
 
-  cout << endl << endl << "ROZWIAZANIE POCZATKOWE" << endl;
+  cout << "ROZWIAZANIE POCZATKOWE" << endl;
 
   G.createFirstSolution();
-  G.printSolution( G.getBestSolution() );
+  //G.printSolution( G.getBestSolution() );
   cout << "Funkcja celu: " << G.getObjectiveFunction( G.getBestSolution() ) << endl;
 
-  cout << "Liczba zmian:" << endl;
-  G.printShiftCount( G.getBestSolution() );
+  //cout << "Liczba zmian:" << endl;
+  //G.printShiftCount( G.getBestSolution() );
 
   for(int i=0; i < NUM_ITERATIONS; i++){
     G.createNewSolution();
-    // system("clear");
-    // G.printSolution();
-    // cout << "Funkcja celu: " << G.getObjectiveFunction() << endl;
   }
 
-  cout << endl << endl << "ROZWIAZANIE KONCOWE" << endl;
+  cout << endl << "ROZWIAZANIE KONCOWE" << endl;
 
-  G.printSolution( G.getBestSolution() );
+  //G.printSolution( G.getBestSolution() );
   cout << "Funkcja celu: " << G.getObjectiveFunction( G.getBestSolution() ) << endl;
 
-  cout << "Liczba zmian:" << endl;
-  G.printShiftCount( G.getBestSolution() );
+  G.exportSolution( G.getBestSolution() );
+
+  //cout << "Liczba zmian:" << endl;
+  //G.printShiftCount( G.getBestSolution() );
 
   return 0;
 }

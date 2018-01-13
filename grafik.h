@@ -48,6 +48,7 @@ class Grafik {
     vector< vector<Worker> > getBestSolution();
 
     void saveData( vector< vector<Worker> > solution );
+    void exportSolution( vector< vector<Worker> > solution );
 
   private:
     vector<Worker> _workers;

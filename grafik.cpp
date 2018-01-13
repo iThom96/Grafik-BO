@@ -176,6 +176,8 @@ void Grafik::createNewSolution(){
     }
   }
 
+  vector< vector<int> > tmp_taboo_list(_taboo_list);
+
   // Copy existing solution
   vector< vector<Worker> > newSolution(_solution);
 
@@ -195,7 +197,7 @@ void Grafik::createNewSolution(){
     for(int j=0; j<newSolution[i].size(); j++){
       if( (rand() % 100 + 1) < P_SWAP ){ //Randomly swap workers with free workers
 
-        if(_taboo_list[i][j] != 0){
+        if(tmp_taboo_list[i][j] != 0){
           taboo_violation = true;
         }
 
@@ -205,7 +207,7 @@ void Grafik::createNewSolution(){
             freeWorkers.push_back( newSolution[i][j] );
             newSolution[i][j] = freeWorkers[k];
 
-            _taboo_list[i][j] = TABOO_AGE; // Add that place to tabo list for TABOO_AGE iterations
+            tmp_taboo_list[i][j] = TABOO_AGE; // Add that place to tabo list for TABOO_AGE iterations
 
             freeWorkers.erase(freeWorkers.begin() + k);
             break;
@@ -216,19 +218,23 @@ void Grafik::createNewSolution(){
     }
 
   }
-  long newObjectiveFunction = getObjectiveFunction(newSolution);
+  float newObjectiveFunction = getObjectiveFunction(newSolution);
 
   if( newObjectiveFunction <= getObjectiveFunction(_best_solution) || ( !taboo_violation && newObjectiveFunction <= getObjectiveFunction(_best_solution)+POGORSZENIE) ) { // If generated solution is better
-
-    if(EXPORT_TO_CSV){
-      saveData( newSolution );
-    }
-
+    _taboo_list = tmp_taboo_list;
     _solution = newSolution;
+
+    if( !taboo_violation && newObjectiveFunction <= getObjectiveFunction(_best_solution)+POGORSZENIE && newObjectiveFunction > getObjectiveFunction(_best_solution) ){
+      // cout << "AAA" << endl;
+    }
   }
 
-  if( newObjectiveFunction <= getObjectiveFunction(_best_solution) ) {
+  if( newObjectiveFunction < getObjectiveFunction(_best_solution) ) {
     _best_solution = newSolution;
+  }
+
+  if(EXPORT_TO_CSV){
+    saveData( _solution );
   }
 
 }
@@ -274,10 +280,10 @@ map<string, float> Grafik::calculateObjectiveFunction( vector< vector<Worker> > 
 
   float avgShifts = shiftSum / (3*_workers.size());
 
+
   for (map<int,vector<int> >::iterator it=_shiftCount.begin(); it!=_shiftCount.end(); it++){
     for(int i=0; i<(it->second).size(); i++){
       float diff = avgShifts - (it->second)[i];
-
       shiftDiff += fabs( diff );
     }
   }
@@ -323,6 +329,7 @@ map<string, float> Grafik::calculateObjectiveFunction( vector< vector<Worker> > 
   objectiveFunctionParameters["value"] = objectiveFunction;
 
   objectiveFunctionParameters["shiftDiff"] = shiftDiff;
+
   objectiveFunctionParameters["shiftChanges"] = shiftChanges;
   objectiveFunctionParameters["punishment"] = punishment;
 
@@ -361,10 +368,11 @@ void Grafik::printShiftCount( vector< vector<Worker> > solution ){
     if(shift==3) shift=0;
   }
 
+  cout << "ID |  A  B  C" << endl;
   for (map<int,vector<int> >::iterator it=shiftCount.begin(); it!=shiftCount.end(); it++){
-    cout << it->first << ": ";
+    cout << setw(2) << it->first << " | ";
     for(int i=0; i<(it->second).size(); i++){
-      cout << (it->second)[i] << " ";
+      cout << setw(2) << (it->second)[i] << " ";
     }
     cout << endl;
   }
@@ -397,4 +405,73 @@ void Grafik::saveData( vector< vector<Worker> > solution ){
       objectiveFunction["adj_punishment"] <<
       endl;
   }
+}
+
+void Grafik::exportSolution( vector< vector<Worker> > solution ){
+  ofstream rozwiazanie("solution.csv");
+  if( rozwiazanie.good() ){
+    rozwiazanie << "Zmiana;ID Pracownikow" << endl;
+    for(int i=0; i < solution.size(); i++){
+      if(i%3 == 0 && i>0){
+        rozwiazanie << "-" << endl;
+      }
+      stringstream line;
+      line << i << ";";
+      for(int j=0; j < solution[i].size(); j++){
+        if( solution[i][j].isEmpty() ){
+          line << "#";
+        }
+        else {
+          line << solution[i][j].getID();
+        }
+        if(j<solution[i].size()-1){
+          line << ";";
+        }
+      }
+      rozwiazanie << line.str() << endl;
+    }
+  }
+  rozwiazanie.close();
+
+  ofstream shiftCountFile("shiftCount.csv");
+  if( shiftCountFile.good() ){
+
+    map<int, vector<int> > shiftCount;
+
+    for(int i=0; i<_workers.size(); i++){
+      shiftCount[ _workers[i].getID() ].resize(3);
+      shiftCount[ _workers[i].getID() ][0] = 0;
+      shiftCount[ _workers[i].getID() ][1] = 0;
+      shiftCount[ _workers[i].getID() ][2] = 0;
+    }
+
+    int shift = 0;
+    for(int i=0; i < solution.size(); i++){
+      for(int j=0; j < solution[i].size(); j++){
+        int workerID = solution[i][j].getID();
+        if(shiftCount.find(workerID) != shiftCount.end()){ // Znaleziono
+          shiftCount[workerID][shift]++;
+        }
+      }
+      shift++;
+      if(shift==3) shift=0;
+    }
+
+    shiftCountFile << "ID Pracownika;A;B;C" << endl;
+    for (map<int,vector<int> >::iterator it=shiftCount.begin(); it!=shiftCount.end(); it++){
+      stringstream line;
+      line << it->first << ";";
+      for(int i=0; i<(it->second).size(); i++){
+        line << (it->second)[i];
+        if( i<(it->second).size()-1 ){
+          line << ";";
+        }
+      }
+      shiftCountFile << line.str() << endl;
+    }
+
+
+  }
+  shiftCountFile.close();
+
 }

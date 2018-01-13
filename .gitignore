@@ -33,4 +33,5 @@
 
 grafik
 *.csv
+f_celu.csv
 .DS_Store
