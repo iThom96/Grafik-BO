@@ -17,4 +17,4 @@ INIReader.o: inih-master/ini.c inih-master/ini.h inih-master/cpp/iniReader.cpp i
 	gcc -c inih-master/cpp/iniReader.cpp
 
 clean:
-	rm -rf *o grafik
+	rm -rf *o grafik *.csv
