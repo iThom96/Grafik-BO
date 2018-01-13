@@ -5,4 +5,4 @@ main.o: main.cpp
 	gcc -c main.cpp
 
 clean:
-	rm -rf *o grafik
+	rm -rf *o grafik template.txt workers.txt
