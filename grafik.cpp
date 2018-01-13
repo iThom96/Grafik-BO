@@ -1,7 +1,7 @@
 #include "grafik.h"
 
 Grafik::Grafik(){
-  srand (1);
+  srand(time(NULL));
   P_SWAP = 20;
   TABOO_AGE = 10;
   POGORSZENIE = 2;
@@ -14,7 +14,7 @@ Grafik::Grafik(){
 }
 
 Grafik::Grafik(INIReader settings){
-  srand (1);
+  srand(time(NULL));
   P_SWAP = settings.GetReal("algorytm", "P_SWAP", 20);
   TABOO_AGE = settings.GetReal("algorytm", "TABOO_AGE", 10);
   POGORSZENIE = settings.GetReal("algorytm", "POGORSZENIE", 2);
