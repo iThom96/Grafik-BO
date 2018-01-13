@@ -28,19 +28,19 @@ int main() {
   Grafik G(reader);
 
   G.loadWorkers("workers.txt");
-  //G.printWorkers();
+  G.printWorkers();
 
   G.loadTemplate("template.txt");
-  //G.printTemplate();
+  G.printTemplate();
 
   cout << "ROZWIAZANIE POCZATKOWE" << endl;
 
   G.createFirstSolution();
-  //G.printSolution( G.getBestSolution() );
+  G.printSolution( G.getBestSolution() );
   cout << "Funkcja celu: " << G.getObjectiveFunction( G.getBestSolution() ) << endl;
 
-  //cout << "Liczba zmian:" << endl;
-  //G.printShiftCount( G.getBestSolution() );
+  cout << "Liczba zmian:" << endl;
+  G.printShiftCount( G.getBestSolution() );
 
   for(int i=0; i < NUM_ITERATIONS; i++){
     G.createNewSolution();
@@ -48,13 +48,13 @@ int main() {
 
   cout << endl << "ROZWIAZANIE KONCOWE" << endl;
 
-  //G.printSolution( G.getBestSolution() );
+  G.printSolution( G.getBestSolution() );
   cout << "Funkcja celu: " << G.getObjectiveFunction( G.getBestSolution() ) << endl;
 
   G.exportSolution( G.getBestSolution() );
 
-  //cout << "Liczba zmian:" << endl;
-  //G.printShiftCount( G.getBestSolution() );
+  cout << "Liczba zmian:" << endl;
+  G.printShiftCount( G.getBestSolution() );
 
   return 0;
 }

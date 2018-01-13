@@ -223,10 +223,6 @@ void Grafik::createNewSolution(){
   if( newObjectiveFunction <= getObjectiveFunction(_best_solution) || ( !taboo_violation && newObjectiveFunction <= getObjectiveFunction(_best_solution)+POGORSZENIE) ) { // If generated solution is better
     _taboo_list = tmp_taboo_list;
     _solution = newSolution;
-
-    if( !taboo_violation && newObjectiveFunction <= getObjectiveFunction(_best_solution)+POGORSZENIE && newObjectiveFunction > getObjectiveFunction(_best_solution) ){
-      // cout << "AAA" << endl;
-    }
   }
 
   if( newObjectiveFunction < getObjectiveFunction(_best_solution) ) {
